@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>frames</key>
+        <dict>
+            <key>edit_eCompareBtn_001.png</key>
+            <dict>
+                <key>aliases</key>
+                <array/>
+                <key>spriteOffset</key>
+                <string>{0,0}</string>
+                <key>spriteSize</key>
+                <string>{174,122}</string>
+                <key>spriteSourceSize</key>
+                <string>{174,122}</string>
+                <key>textureRect</key>
+                <string>{{0,0},{174,122}}</string>
+                <key>textureRotated</key>
+                <false/>
+            </dict>
+        </dict>
+        <key>metadata</key>
+        <dict>
+            <key>format</key>
+            <integer>3</integer>
+            <key>pixelFormat</key>
+            <string>RGBA8888</string>
+            <key>premultiplyAlpha</key>
+            <false/>
+            <key>realTextureFileName</key>
+            <string>GJ_triggerAdditions-hd.png</string>
+            <key>size</key>
+            <string>{174,122}</string>
+            <key>smartupdate</key>
+            <string>$TexturePacker:SmartUpdate:aaadbd7490dab44cdd5eebc7f683aaaa:400ef0c6fab8f02c64e2e23bd7a0bcc3:286744a2d9980c5eff9b7cee4d460989$</string>
+            <key>textureFileName</key>
+            <string>GJ_triggerAdditions-hd.png</string>
+        </dict>
+    </dict>
+</plist>

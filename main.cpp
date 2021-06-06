@@ -328,9 +328,21 @@ void inject() {
 
     m = new ModContainer(CAC_PROJ_NAME);
 
-    auto editor = Cacao::EditorUIEditor::create(m);
+    // void(*rAss)(LoadingLayer*) = +[](LoadingLayer* self) {
+    //     CCTextureCache::sharedTextureCache()->addImage("GJ_square05.png", false);
+    //     ORIG(*rAss, 0x1dfb20)(self);
+    // };
+    // m->registerHook(getBase()+0x1dfb20, rAss);
 
-    Cacao::addGDObject("checkpoint_01_001.png", CompareTriggerObject::objectID);
+    auto editor = Cacao::EditorUIEditor::create(m);
+    // screw custom texture
+    // CCTextureCache::sharedTextureCache()->addImage("GJ_triggerAdditions.png", false);
+    // CCTextureCache::sharedTextureCache()->addImage("GJ_square05-uhd.png", false);
+    // CCTextureCache::sharedTextureCache()->addImage("GJ_triggerAdditions-uhd.png", false);
+    
+    // auto frameCache = cocos2d::CCSpriteFrameCache::sharedSpriteFrameCache();
+    // frameCache->addSpriteFramesWithFile("GJ_triggerAdditions.plist");
+    Cacao::addGDObject("edit_eCounterBtn_001.png", CompareTriggerObject::objectID);
 
     editor
         ->bar(11)
