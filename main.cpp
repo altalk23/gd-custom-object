@@ -49,7 +49,6 @@ namespace CompareTriggerObject {
             m_spawnTriggeredCheckbox = nullptr;
             m_multiTriggerCheckbox = nullptr;
             m_multiTriggerLabel = nullptr;
-            m_multiTriggerLabel = nullptr;
             m_smallerCheckbox = nullptr;
             m_equalsCheckbox = nullptr;
             m_largerCheckbox = nullptr;
@@ -294,7 +293,7 @@ namespace CompareTriggerObject {
     }
 
     void callback(GameObject *self, GJBaseGameLayer *gameLayer) {
-        int *itemValues = &(gameLayer->_effectManager()->_itemValues());
+        int *itemValues = gameLayer->_effectManager()->m_itemValues;
         auto ego = reinterpret_cast<EffectGameObject *>(self);
         int itemA = ego->_itemBlockID();
         int itemACount = itemValues[itemA];
@@ -322,6 +321,241 @@ namespace CompareTriggerObject {
     }
 }
 
+namespace CounterTriggerObject {
+    constexpr int objectID = 3202;
+
+    template <typename T, typename F>
+    void renderCustomUI(T self, F mainLayer);
+
+    class SetupCounterPopup : public FLAlertLayer {
+    public:
+        SetupCounterPopup() : FLAlertLayer() {
+            m_controlConnected = -1;
+            m_joystickConnected = -1;
+            m_ZOrder = 0;
+            m_noElasticity = true;
+            m_touchTriggeredCheckbox = nullptr;
+            m_spawnTriggeredCheckbox = nullptr;
+            m_multiTriggerCheckbox = nullptr;
+            m_multiTriggerLabel = nullptr;
+            m_activateCheckbox = nullptr;
+        }
+        static SetupCounterPopup* create(EffectGameObject* ego) {
+            SetupCounterPopup* scp = new SetupCounterPopup();
+            uint64_t ok1 = DREF(scp);
+            uint64_t ok2 = DREF(ok1-8)+16;
+
+            uint64_t n_typinfo = getBase()+0x65d870; // FLAlertLayer vtable or some shit
+            MemoryContainer(ok2, 8, reinterpret_cast<char*>(&n_typinfo)).enable();
+            if (scp && scp->init(ego)) {
+                scp->m_scene = NULL;
+                scp->autorelease();
+            } else {
+                CC_SAFE_DELETE(scp);
+            }
+            return scp;
+        }
+        void onClose(CCObject* callback) {
+            auto item = std::atoi(m_itemInput->getString_s());
+            auto targetGroup = std::atoi(m_targetIDInput->getString_s());
+            m_effectObject->_itemBlockID() = item;
+            m_effectObject->_targetGroup() = targetGroup;
+
+            m_helper->keyBackClicked();
+            setKeypadEnabled(false);
+            setTouchEnabled(false);
+            removeFromParentAndCleanup(true);
+        }
+        virtual void keyBackClicked() {
+            onClose(NULL);
+        }
+        void restoreDefaults() {
+            std::string s;
+            s = to_string(m_effectObject->_itemBlockID());
+            if (s.length() > 0 && m_effectObject->_itemBlockID() != 0) m_itemInput->setString(s);
+            s = to_string(m_effectObject->_targetGroup());
+            if (s.length() > 0 && m_effectObject->_targetGroup() != 0) m_targetIDInput->setString(s);
+
+            if (m_touchTriggeredCheckbox) m_touchTriggeredCheckbox->toggle(m_effectObject->_touchTriggered());
+            if (m_spawnTriggeredCheckbox) m_spawnTriggeredCheckbox->toggle(m_effectObject->_spawnTriggered());
+            if (m_multiTriggerCheckbox) m_multiTriggerCheckbox->toggle(m_effectObject->_multiTrigger());
+            if (m_multiTriggerCheckbox) m_multiTriggerCheckbox->setVisible(m_effectObject->_spawnTriggered());
+            if (m_multiTriggerLabel) m_multiTriggerLabel->setVisible(m_effectObject->_spawnTriggered());
+
+            if (m_activateCheckbox) m_activateCheckbox->toggle(m_effectObject->_activateGroup());
+        }
+
+        void onTouchTriggered(CCObject*) {
+            m_effectObject->_touchTriggered() = !m_effectObject->_touchTriggered();
+            m_effectObject->_spawnTriggered() = false;
+            m_multiTriggerCheckbox->setVisible(false);
+            m_multiTriggerLabel->setVisible(false);
+            m_spawnTriggeredCheckbox->toggle(false);
+        }
+        void onSpawnTriggered(CCObject*) {
+            m_effectObject->_touchTriggered() = false,
+            m_effectObject->_spawnTriggered() = !m_effectObject->_spawnTriggered();
+            m_multiTriggerCheckbox->setVisible(m_effectObject->_spawnTriggered());
+            m_multiTriggerLabel->setVisible(m_effectObject->_spawnTriggered());
+            m_touchTriggeredCheckbox->toggle(false);
+        }
+        void onMultiTrigger(CCObject*) {
+            m_effectObject->_multiTrigger() = !m_effectObject->_multiTrigger();
+        }
+        void onDecreaseItem(CCObject*) {
+            auto item = std::atoi(m_itemInput->getString_s());
+            if (item > 1) --item;
+            m_effectObject->_itemBlockID() = item;
+            m_itemInput->setString(to_string(item));
+        }
+        void onIncreaseItem(CCObject*) {
+            auto item = std::atoi(m_itemInput->getString_s());
+            if (item < 999) ++item;
+            m_effectObject->_itemBlockID() = item;
+            m_itemInput->setString(to_string(item));
+        }
+        void onDecreaseTargetID(CCObject*) {
+            auto targetID = std::atoi(m_targetIDInput->getString_s());
+            if (targetID > 1) --targetID;
+            m_effectObject->_targetGroup() = targetID;
+            m_targetIDInput->setString(to_string(targetID));
+        }
+        void onIncreaseTargetID(CCObject*) {
+            auto targetID = std::atoi(m_targetIDInput->getString_s());
+            if (targetID < 999) ++targetID;
+            m_effectObject->_targetGroup() = targetID;
+            m_targetIDInput->setString(to_string(targetID));
+        }
+        void onActivateGroup(CCObject*) {
+            m_effectObject->_activateGroup() = !m_effectObject->_activateGroup();
+        }
+
+        bool init(EffectGameObject* ego) {
+
+            if (CCLayerColor::initWithColor(ccc4(0,0,0,150))) {
+                m_effectObject = ego;
+
+                m_helper = FLAlertLayer::create("","","");
+                m_helper->m_buttonMenu->setVisible(false);
+                m_helper->m_noElasticity = true;
+                m_helper->show();
+
+                registerWithTouchDispatcher();
+                CCDirector::sharedDirector()->getTouchDispatcher()->incrementForcePrio(2);
+
+                setTouchEnabled(true);
+                setKeypadEnabled(true);
+
+                m_mainLayer = CCLayer::create();
+                addChild(m_mainLayer);
+                renderCustomUI(this, m_mainLayer);
+                restoreDefaults();
+            }
+            return true;
+        }
+
+    protected:
+        template <typename T, typename F, typename E>
+        friend void CocosHelper::createIDTextInput(T, F, double, double, const char *, CCTextInputNode **, E, E);
+        template <typename T, typename F, typename E>
+        friend void CocosHelper::createTogglerInput(T, F, double, double, double, const char *, CCLabelBMFont **, CCMenuItemToggler **, E);
+        template <typename T, typename F, typename E>
+        friend void CocosHelper::createOKButton(T, F, double, double, E);
+        template <typename T, typename F>
+        friend void CocosHelper::createTitle(T, F, double, double, const char *);
+        template <typename T, typename F>
+        friend void createBackdrop(T, F, double, double, double, double);
+        template <typename T, typename F>
+        friend void renderCustomUI(T, F);
+
+        EffectGameObject *m_effectObject;
+        CCTextInputNode *m_itemInput;
+        CCTextInputNode *m_targetIDInput;
+        FLAlertLayer *m_helper;
+
+        CCMenuItemToggler *m_touchTriggeredCheckbox;
+        CCMenuItemToggler *m_spawnTriggeredCheckbox;
+        CCMenuItemToggler *m_multiTriggerCheckbox;
+        CCLabelBMFont *m_multiTriggerLabel;
+
+        CCMenuItemToggler *m_activateCheckbox;
+    };
+
+    template <typename T, typename F>
+    void renderCustomUI(T self, F mainLayer) {
+        typedef void (CCObject::*menusel)(CCObject *);
+
+        CocosHelper::createBackdrop(self, mainLayer, 50.0, 50.0, 300.0, 280.0);
+
+        CocosHelper::createTitle(self, mainLayer, 0, 120.0, "Counter Trigger");
+
+        CocosHelper::createIDTextInput(self, mainLayer, -72.0, 64.0, "Item ID", &self->m_itemInput, &SetupCounterPopup::onDecreaseItem, &SetupCounterPopup::onIncreaseItem);
+        CocosHelper::createIDTextInput(self, mainLayer, 72.0, 64.0, "Target ID", &self->m_targetIDInput, &SetupCounterPopup::onDecreaseTargetID, &SetupCounterPopup::onIncreaseTargetID);
+
+        CocosHelper::createTogglerInput(self, mainLayer, -120.0, 48.0, -108.0, "Spawn   \nTriggered", nullptr, &self->m_spawnTriggeredCheckbox, &SetupCounterPopup::onSpawnTriggered);
+        CocosHelper::createTogglerInput(self, mainLayer, -120.0, 47.0, -72.0, "Touch   \nTriggered", nullptr, &self->m_touchTriggeredCheckbox, &SetupCounterPopup::onTouchTriggered);
+        CocosHelper::createTogglerInput(self, mainLayer, 72.0, 43.0, -108.0, "Multi   \nTrigger", &self->m_multiTriggerLabel, &self->m_multiTriggerCheckbox, &SetupCounterPopup::onMultiTrigger);
+
+        CocosHelper::createTogglerInput(self, mainLayer, 72.0, 50.0, -72.0, "Activate   \nGroup", nullptr, &self->m_activateCheckbox, &SetupCounterPopup::onActivateGroup);
+
+        CocosHelper::createOKButton(self, mainLayer, 0, -112.0, &SetupCounterPopup::onClose);
+    }
+
+
+
+    std::string objectToString(GameObject *go, std::string st) {
+        auto ego = reinterpret_cast<EffectGameObject *>(go);
+
+        if (ego->_itemBlockID() > 0) st += ",80," + to_string(ego->_itemBlockID());
+         if (ego->_targetCount() > 0) st += ",77," + to_string(ego->_targetCount());
+        if (ego->_targetGroup() > 0) st += ",51," + to_string(ego->_targetGroup());
+        if (ego->_activateGroup() > 0) st += ",56," + to_string(ego->_activateGroup());
+        // std::cout << st << "?2\n\n";
+        return st;
+    }
+
+    GameObject* objectFromString(GameObject* go, std::string st) {
+        auto ego = reinterpret_cast<EffectGameObject *>(go);
+        auto mp = GameToolbox::stringSetupToMap(st, ",");
+
+        if (mp.count("80")) ego->_itemBlockID() = std::atoi(mp["80"].c_str());
+        if (mp.count("77")) ego->_targetCount() = std::atoi(mp["77"].c_str());
+        if (mp.count("51")) ego->_targetGroup() = std::atoi(mp["51"].c_str());
+        if (mp.count("56") && mp["56"] == "1") ego->_activateGroup() = true;
+
+        return go;
+    }
+
+    void callback(GameObject *self, GJBaseGameLayer *gameLayer) {
+        int *itemValues = gameLayer->_effectManager()->m_itemValues;
+        auto ego = reinterpret_cast<EffectGameObject *>(self);
+        int item = ego->_itemBlockID();
+        ++itemValues[item];
+        
+        // int itemB = ego->_itemBlockBID();
+        // int itemBCount = itemValues[itemB];
+        // switch ((CompareMode)ego->_compareType()) {
+        //     case CompareMode::Smaller:
+        //         if (itemACount < itemBCount) gameLayer->toggleGroupTriggered(ego->_targetGroup(), ego->_activateGroup());
+        //         break;
+        //     case CompareMode::Equals:
+        //         if (itemACount == itemBCount) gameLayer->toggleGroupTriggered(ego->_targetGroup(), ego->_activateGroup());
+        //         break;
+        //     case CompareMode::Larger:
+        //         if (itemACount > itemBCount) gameLayer->toggleGroupTriggered(ego->_targetGroup(), ego->_activateGroup());
+        //         break;
+        // }
+    }
+
+    void editPopup(EditorUI *self) {
+        auto obs = self->getSelectedObjects();
+        auto ob = self->_lastSelectedObject();
+        if (obs->count() == 1 && ob->_id() == CounterTriggerObject::objectID) {
+            CounterTriggerObject::SetupCounterPopup::create(reinterpret_cast<EffectGameObject*>(ob))->show();
+        }
+    }
+}
+
 #include "cocos_helper.hpp"
 
 void inject() {
@@ -342,8 +576,9 @@ void inject() {
     
     // auto frameCache = cocos2d::CCSpriteFrameCache::sharedSpriteFrameCache();
     // frameCache->addSpriteFramesWithFile("GJ_triggerAdditions.plist");
-    Cacao::addGDObject("edit_eCounterBtn_001.png", CompareTriggerObject::objectID);
+    //Cacao::addGDObject("edit_eCounterBtn_001.png", CompareTriggerObject::objectID);
 
+    Cacao::addGDObject("fireBoost_001.png", CompareTriggerObject::objectID);
     editor
         ->bar(11)
         ->addIndex(12, CompareTriggerObject::objectID)
@@ -352,6 +587,15 @@ void inject() {
         ->addTriggerCallback(CompareTriggerObject::objectID, CompareTriggerObject::callback)
         ->addEditPopup(CompareTriggerObject::objectID, CompareTriggerObject::editPopup)
         ->addSaveString(CompareTriggerObject::objectID, CompareTriggerObject::objectFromString, CompareTriggerObject::objectToString);
+
+    Cacao::addGDObject("edit_eCounterBtn_001.png", CounterTriggerObject::objectID);
+    editor
+        ->bar(11)
+        ->addIndex(12, CounterTriggerObject::objectID)
+        ->addObjectsToGameSheet02(CounterTriggerObject::objectID)
+        ->addEffectObjects(CounterTriggerObject::objectID)
+        ->addEditPopup(CounterTriggerObject::objectID, CounterTriggerObject::editPopup)
+        ->addSaveString(CounterTriggerObject::objectID, CounterTriggerObject::objectFromString, CounterTriggerObject::objectToString);
 
     editor->applyAll();
 
